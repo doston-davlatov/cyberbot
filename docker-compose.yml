@@ -1,0 +1,10 @@
+# docker-compose.yml (ixtiyoriy)
+version: '3.8'
+services:
+  bot:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./bot/utils/logs:/app/bot/utils/logs
+    restart: unless-stopped

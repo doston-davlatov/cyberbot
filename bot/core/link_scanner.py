@@ -1,64 +1,35 @@
+# bot/core/link_scanner.py
 import re
-import tldextract
+import requests
+from tldextract import extract
+import logging
 
-phishing_keywords = [
-    "login",
-    "verify",
-    "update",
-    "secure",
-    "account",
-    "bank",
-    "confirm",
-    "password",
-    "wallet"
-]
+logger = logging.getLogger(__name__)
 
-shorteners = [
-    "bit.ly",
-    "t.co",
-    "tinyurl.com",
-    "goo.gl",
-    "ow.ly",
-    "is.gd"
-]
+PHISHING_KEYWORDS = ["login", "password", "bank", "verify", "update", "secure"]
+SHORTENERS = ["bit.ly", "goo.gl", "tinyurl.com"]
 
+def extract_links(text: str) -> list:
+    url_pattern = re.compile(r'https?://\S+|www\.\S+')
+    return url_pattern.findall(text)
 
-def extract_links(text):
+def scan_link(url: str) -> dict:
+    try:
+        # Domen tekshirish
+        extracted = extract(url)
+        domain = f"{extracted.domain}.{extracted.suffix}"
 
-    url_regex = r'(https?://[^\s]+)'
-    return re.findall(url_regex, text)
+        if domain in SHORTENERS:
+            response = requests.head(url, allow_redirects=True)
+            url = response.url  # Real URL olish
 
+        # Keywords tekshirish
+        if any(kw in url.lower() for kw in PHISHING_KEYWORDS):
+            return {"danger": True, "reason": "Phishing keywords aniqlandi", "score": 1.0}
 
-def check_domain(url):
+        # Qo'shimcha: VT yoki Safe Browsing qo'shish mumkin
 
-    ext = tldextract.extract(url)
-    domain = f"{ext.domain}.{ext.suffix}"
-    return domain
-
-
-def scan(text):
-
-    links = extract_links(text)
-
-    if not links:
-        return {"danger": False}
-
-    for link in links:
-
-        domain = check_domain(link)
-
-        for short in shorteners:
-            if short in domain:
-                return {
-                    "danger": True,
-                    "reason": "shortened_link"
-                }
-
-        for word in phishing_keywords:
-            if word in link.lower():
-                return {
-                    "danger": True,
-                    "reason": "phishing_keyword"
-                }
-
-    return {"danger": False}
+        return {"danger": False, "reason": "safe"}
+    except Exception as e:
+        logger.error(f"Havola skanida xato: {e}")
+        return {"danger": False, "reason": "error"}

@@ -1,35 +1,38 @@
+# bot/core/ai_model.py
 from transformers import pipeline
-from bot.utils import helpers
-import json
-import os
+import torch
+import logging
 
-LANG_DIR = os.path.join(os.path.dirname(__file__), "../languages")
+logger = logging.getLogger(__name__)
 
-def load_language(lang):
-    path = os.path.join(LANG_DIR, f"{lang}.json")
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+PHISHING_MODEL = None
 
-# DistilBERT modeli matnni scam yoki phishing uchun klassifikatsiya qiladi
-classifier = pipeline(
-    "text-classification",
-    model="distilbert-base-uncased-finetuned-sst-2-english"
-)
+def load_phishing_model():
+    global PHISHING_MODEL
+    try:
+        PHISHING_MODEL = pipeline(
+            "text-classification",
+            model="cybersectony/phishing-email-detection-distilbert_v2.4.1",
+            device=0 if torch.cuda.is_available() else -1
+        )
+        logger.info("Phishing model yuklandi")
+    except Exception as e:
+        logger.error(f"Model yuklashda xato: {e}")
 
-def analyze_text(text, lang="en"):
+def is_phishing(text: str, threshold: float = 0.75) -> tuple[bool, float]:
+    if PHISHING_MODEL is None:
+        load_phishing_model()
+        if PHISHING_MODEL is None:
+            return False, 0.0
 
-    result = classifier(text)[0]
-    label = result["label"]
-    score = result["score"]
-
-    if label == "NEGATIVE" and score > 0.85:
-        lang_data = load_language(lang)
-        return {
-            "danger": True,
-            "score": score,
-            "alert_text": lang_data.get("suspicious_text_alert", "Suspicious message detected")
-        }
-
-    return {
-        "danger": False
-    }
+    try:
+        results = PHISHING_MODEL(text, truncation=True, max_length=512)
+        for res in results:
+            if res['label'].lower() in ['phishing', 'malicious']:
+                score = res['score']
+                if score >= threshold:
+                    return True, score
+        return False, 0.0
+    except Exception as e:
+        logger.error(f"AI analizda xato: {e}")
+        return False, 0.0

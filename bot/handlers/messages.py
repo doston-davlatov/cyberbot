@@ -1,46 +1,38 @@
-from aiogram import Router
-from aiogram.types import Message
-from bot.core.text_analyzer import analyze
-from bot.utils import helpers
-from bot.database import models
-from bot.core.link_scanner import scan_link
+# bot/handlers/messages.py
+from aiogram import Bot
+from aiogram import Router, types
+from bot.core.text_analyzer import analyze_text
+from bot.core.link_scanner import extract_links, scan_link
+from bot.database.models import get_user, save_alert
+from bot.utils.helpers import get_lang_text, notify_admins, get_user_language
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = Router()
 
 @router.message()
-async def message_handler(message: Message):
-    lang = helpers.get_user_language(message.from_user)
+async def handle_message(message: types.Message, bot: Bot):
+    user_id = message.from_user.id
+    lang = get_user_language(user_id)
+    text = message.text or message.caption or ""
     
-    # AI + scam matn tekshiruv
-    result = analyze(message.text, lang)
-    if result["danger"]:
-        await message.reply(result.get("alert_text", "Xavfli xabar aniqlandi!"))
-        # Adminga alert yuborish
-        await helpers.notify_admins(message, "suspicious_text_alert", result.get("reason",""), lang)
-        # DB ga saqlash
-        models.save_alert(
-            chat_id=message.chat.id,
-            user_id=message.from_user.id,
-            content=message.text,
-            alert_type="text",
-            risk="high"
-        )
-        return
-
-    # Havolalarni tekshirish
-    urls = scan_link.extract_urls(message.text)
-    for url in urls:
-        is_danger = scan_link.scan(url)
-        if is_danger:
-            await helpers.notify_admins(message, "malicious_link_alert", url, lang)
-            await message.reply("Havola xavfli deb topildi!")
-            models.save_alert(
-                chat_id=message.chat.id,
-                user_id=message.from_user.id,
-                content=url,
-                alert_type="link",
-                risk="high"
-            )
-
-def register(dp):
-    dp.include_router(router)
+    # Matn analiz
+    text_result = analyze_text(text, lang)
+    
+    # Havolalar
+    links = extract_links(text)
+    link_results = [scan_link(link) for link in links]
+    any_link_danger = any(r["danger"] for r in link_results)
+    
+    if text_result["danger"] or any_link_danger:
+        user = get_user(user_id)
+        threat_type = "text" if text_result["danger"] else "link"
+        content = text if text_result["danger"] else links[0]
+        save_alert(user["id"], threat_type, content, "high")
+        await notify_admins(bot, f"Xavf: {content} (user: {user_id})")
+        text = get_lang_text("phishing_detected", lang).format(reason=text_result.get("reason", "") or link_results[0]["reason"])
+    else:
+        return  # Hech qanday xavf yo'q, javob bermaymiz
+    
+    await message.reply(text)

@@ -1,60 +1,33 @@
+# bot/core/file_scanner.py
 import requests
 import hashlib
-import config
+import logging
+from virustotal_python import Virustotal
+from config import VIRUSTOTAL_API_KEY
 
-VIRUSTOTAL_URL = "https://www.virustotal.com/api/v3/files"
+logger = logging.getLogger(__name__)
 
+def scan_file(file_url: str) -> dict:
+    try:
+        # Faylni yuklab olish
+        response = requests.get(file_url)
+        response.raise_for_status()
+        file_content = response.content
 
-def download_file(url):
+        # Hash hisoblash
+        sha256 = hashlib.sha256(file_content).hexdigest()
 
-    response = requests.get(url)
+        # VirusTotal orqali skan
+        vtotal = Virustotal(API_KEY=VIRUSTOTAL_API_KEY)
+        analysis = vtotal.request(f"files/{sha256}").json()
 
-    if response.status_code == 200:
-        return response.content
-
-    return None
-
-
-def file_hash(data):
-
-    sha256 = hashlib.sha256()
-    sha256.update(data)
-    return sha256.hexdigest()
-
-
-def scan(file_url):
-
-    data = download_file(file_url)
-
-    if not data:
-        return {"danger": False}
-
-    hash_value = file_hash(data)
-
-    headers = {
-        "x-apikey": config.VIRUSTOTAL_API_KEY
-    }
-
-    response = requests.get(
-        f"{VIRUSTOTAL_URL}/{hash_value}",
-        headers=headers
-    )
-
-    if response.status_code != 200:
-        return {"danger": False}
-
-    result = response.json()
-
-    stats = result["data"]["attributes"]["last_analysis_stats"]
-
-    malicious = stats.get("malicious", 0)
-    suspicious = stats.get("suspicious", 0)
-
-    if malicious > 0 or suspicious > 0:
-        return {
-            "danger": True,
-            "malicious": malicious,
-            "suspicious": suspicious
-        }
-
-    return {"danger": False}
+        if "data" in analysis:
+            stats = analysis["data"]["attributes"]["last_analysis_stats"]
+            malicious = stats.get("malicious", 0)
+            if malicious > 0:
+                return {"danger": True, "reason": f"{malicious} antivirus zararli deb topdi", "score": malicious}
+        
+        return {"danger": False, "reason": "safe"}
+    except Exception as e:
+        logger.error(f"Fayl skanida xato: {e}")
+        return {"danger": False, "reason": "error"}

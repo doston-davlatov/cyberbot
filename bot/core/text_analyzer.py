@@ -1,31 +1,26 @@
-from .ai_model import analyze_text
-from bot.utils import helpers
+# bot/core/text_analyzer.py
+from bot.core.ai_model import is_phishing
+import logging
 
-scam_words = [
-    "send code",
-    "verify account",
-    "free money",
-    "win prize",
-    "urgent",
-    "confirm password",
-    "bank verification",
-    "telegram support",
-    "security alert",
-    "click here"
-]
+logger = logging.getLogger(__name__)
 
-def analyze(text, lang="en"):
+SCAM_WORDS = {
+    "uz": ["bank", "parol", "tasdiqlash", "yangilash"],
+    "ru": ["банк", "пароль", "подтвердить", "обновить"],
+    "en": ["bank", "password", "verify", "update"]
+}
 
-    lower = text.lower()
+def analyze_text(text: str, lang: str = "en") -> dict:
+    try:
+        scam_words = SCAM_WORDS.get(lang, SCAM_WORDS["en"])
+        if any(word in text.lower() for word in scam_words):
+            return {"danger": True, "reason": "Scam so'zlar aniqlandi", "score": 1.0}
 
-    for word in scam_words:
-        if word in lower:
-            return {
-                "danger": True,
-                "reason": word
-            }
-    ai_result = analyze_text(text, lang)
-    if ai_result["danger"]:
-        return ai_result
+        is_danger, score = is_phishing(text)
+        if is_danger:
+            return {"danger": True, "reason": f"AI phishing: {score:.2%}", "score": score}
 
-    return {"danger": False}
+        return {"danger": False, "reason": "safe"}
+    except Exception as e:
+        logger.error(f"Matn analizda xato: {e}")
+        return {"danger": False, "reason": "error"}

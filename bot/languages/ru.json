@@ -1,7 +1,7 @@
 {
-  "start_message": "Бот CyberGuard запущен. Сообщения проверяются на угрозы.",
-  "help_message": "Команды:\n/start - Запустить бот\n/help - Помощь",
-  "phishing_alert": "⚠️ Обнаружена фишинговая ссылка",
-  "suspicious_text_alert": "⚠️ Обнаружено подозрительное сообщение",
-  "malware_file_alert": "⚠️ Обнаружен вредоносный файл"
+  "welcome_message": "Привет, Doston! Я CyberBot - проверяю ссылки и файлы.",
+  "help_message": "/start - начать\n/help - помощь",
+  "phishing_detected": "⚠️ Обнаружена опасность: {reason}",
+  "malicious_file_alert": "⚠️ Вредоносный файл: {reason}",
+  "file_safe": "Файл безопасен!"
 }

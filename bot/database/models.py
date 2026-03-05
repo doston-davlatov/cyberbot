@@ -1,21 +1,19 @@
-from bot.database.mysql import execute, fetchone
+# bot/database/models.py
+from bot.database.mysql import execute_query, fetch_one
+import logging
 
-def get_user(telegram_id):
+logger = logging.getLogger(__name__)
+
+def get_user(telegram_id: int):
     query = "SELECT * FROM users WHERE telegram_id = %s"
-    return fetchone(query, (telegram_id,))
+    return fetch_one(query, (telegram_id,))
 
+def create_user(telegram_id: int, language: str = "uz"):
+    if get_user(telegram_id):
+        return  
+    query = "INSERT INTO users (telegram_id, language) VALUES (%s, %s)"
+    execute_query(query, (telegram_id, language))
 
-def create_user(telegram_id, username, language):
-    query = """
-    INSERT INTO users (telegram_id, username, language)
-    VALUES (%s, %s, %s)
-    """
-    execute(query, (telegram_id, username, language))
-
-
-def save_alert(group_id, user_id, message, threat_type, risk_level):
-    query = """
-    INSERT INTO alerts (group_id, user_id, message, threat_type, risk_level)
-    VALUES (%s, %s, %s, %s, %s)
-    """
-    execute(query, (group_id, user_id, message, threat_type, risk_level))
+def save_alert(user_id: int, threat_type: str, content: str, risk_level: str = "medium"):
+    query = "INSERT INTO alerts (user_id, threat_type, content, risk_level) VALUES (%s, %s, %s, %s)"
+    execute_query(query, (user_id, threat_type, content, risk_level))
