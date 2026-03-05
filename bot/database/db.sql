@@ -1,0 +1,20 @@
+CREATE DATABASE cyberbot;
+
+CREATE TABLE users(
+ id INT AUTO_INCREMENT PRIMARY KEY,
+ telegram_id BIGINT,
+ username VARCHAR(255),
+ language VARCHAR(5),
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE alerts(
+ id INT AUTO_INCREMENT PRIMARY KEY,
+ group_id BIGINT,
+ user_id BIGINT,
+ message TEXT,
+ threat_type VARCHAR(50),
+ risk_level VARCHAR(20),
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+

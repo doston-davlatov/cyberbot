@@ -1,0 +1,7 @@
+{
+  "start_message": "CyberGuard Bot ishga tushdi. Xabarlar xavfsizlik uchun skanerlanyapti.",
+  "help_message": "Buyruqlar:\n/start - Botni ishga tushirish\n/help - Yordam",
+  "phishing_alert": "⚠️ Fishing havola aniqlandi",
+  "suspicious_text_alert": "⚠️ Shubhali xabar aniqlandi",
+  "malware_file_alert": "⚠️ Zararlangan fayl aniqlandi"
+}

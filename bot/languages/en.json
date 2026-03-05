@@ -1,0 +1,7 @@
+{
+  "start_message": "CyberGuard Bot is running. Messages are being scanned for threats.",
+  "help_message": "Commands:\n/start - Start bot\n/help - Help",
+  "phishing_alert": "⚠️ Phishing link detected",
+  "suspicious_text_alert": "⚠️ Suspicious message detected",
+  "malware_file_alert": "⚠️ Malicious file detected"
+}

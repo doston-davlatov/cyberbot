@@ -1,0 +1,8 @@
+aiogram
+mysql-connector-python
+requests
+python-dotenv
+tldextract
+virustotal-python
+transformers
+scikit-learn
