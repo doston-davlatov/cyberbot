@@ -5,9 +5,9 @@ import os
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from bot.handlers import commands, messages, files
 from bot.core.ai_model import load_phishing_model
 from bot.utils.logger import setup_logger
+from bot.handlers import commands, messages, files
 from config import BOT_TOKEN, LOG_FILE
 
 async def main():

@@ -4,6 +4,9 @@ from aiogram import F
 from aiogram.enums import ContentType
 from bot.core.file_scanner import scan_file
 from bot.database.models import get_user, save_alert
+from bot.core.text_analyzer import analyze_text
+from bot.core.link_scanner import extract_links, scan_link
+from bot.utils.helpers import get_lang_text, notify_admins, get_user_language
 from bot.utils.helpers import get_lang_text, notify_admins, get_user_language
 import logging
 
